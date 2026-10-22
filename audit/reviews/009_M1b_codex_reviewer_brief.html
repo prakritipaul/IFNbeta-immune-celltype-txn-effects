@@ -1,0 +1,57 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>M1b reviewer brief (Codex, commit b254e07)</title><style>
+:root { --bg:#fcfcfb; --ink:#2b2b28; --muted:#5c5c57; --rule:#e6e6e3; --accent:#2a78d6; --code:#f3f3f1; }
+@media (prefers-color-scheme: dark) { :root { --bg:#1a1a19; --ink:#f2f2ef; --muted:#c3c2b7; --rule:#34342f; --accent:#6da7ec; --code:#262624; } }
+body { background:var(--bg); color:var(--ink); font:16px/1.6 -apple-system, "Segoe UI", sans-serif; max-width:52rem; margin:2rem auto; padding:0 16px; }
+h1 { font-size:1.6rem; border-bottom:1px solid var(--rule); padding-bottom:.4rem; }
+h2 { font-size:1.2rem; margin-top:2rem; color:var(--accent); }
+a { color:var(--accent); } li { margin:.35rem 0; }
+code { background:var(--code); padding:.1em .35em; border-radius:4px; font-size:.9em; }
+table { border-collapse:collapse; margin:1rem 0; } th, td { border:1px solid var(--rule); padding:.35rem .6rem; text-align:left; vertical-align:top; }
+nav { color:var(--muted); font-size:.9rem; border:1px solid var(--rule); border-radius:6px; padding:.5rem 1rem; }
+del { color:var(--muted); }
+</style></head><body><nav><strong>Contents</strong><div class="toc">
+<ul>
+<li><a href="#m1b-reviewer-brief-codex-commit-b254e07">M1b reviewer brief (Codex, commit b254e07)</a><ul>
+<li><a href="#1-what-m1b-does-in-3-lines">1. What M1b does, in 3 lines</a></li>
+<li><a href="#2-assumptions-coded-in">2. Assumptions coded in</a></li>
+<li><a href="#3-decisions-the-user-didnt-make">3. Decisions the user didn't make</a></li>
+<li><a href="#4-the-lines-worth-reading-yourself">4. The lines worth reading yourself</a></li>
+<li><a href="#5-what-nothing-checks">5. What nothing checks</a></li>
+<li><a href="#6-verdict">6. Verdict</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</nav><h1 id="m1b-reviewer-brief-codex-commit-b254e07">M1b reviewer brief (Codex, commit b254e07)</h1>
+<h2 id="1-what-m1b-does-in-3-lines">1. What M1b does, in 3 lines</h2>
+<ul>
+<li>Input: raw pseudobulk counts for 15,701 genes in 116 kept donor × condition × cell-type samples (16 samples for six cell types, 12 dendritic, 8 megakaryocyte).</li>
+<li>It fits treatment versus control separately in all 8 cell types with paired DESeq2 (<code>~ donor + condition</code>), then repeats no-outlier, unpaired, leave-one-donor-out and balanced-label-shuffle runs.</li>
+<li>Output: 125,608 main rows (8 × 15,701), 4,788,805 all-run rows across 305 fits/46 named runs, and 305 fit records; main calls range from 27 DE genes in megakaryocytes to 2,335 in CD14+ monocytes.</li>
+</ul>
+<h2 id="2-assumptions-coded-in">2. Assumptions coded in</h2>
+<ul>
+<li>Kept samples must form exact donor pairs, one control and one treatment per cell type (<a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad831d5818f7dad3c/src/m1b_de.py:91">src/m1b_de.py:91</a>); this prevents an apparently paired fit from using incomplete or duplicated pairs.</li>
+<li>Treatment is explicitly contrasted against <code>ctrl</code>/<code>control</code> (<a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad831d5818f7dad3c/R/m1b_deseq2.R:73">R/m1b_deseq2.R:73</a>); reversing this would turn every up-response into a down-response.</li>
+<li>Size-factor, Wald-fit, parametric-trend, no-beta-prior and Cook's settings are fixed explicitly (<a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad831d5818f7dad3c/R/m1b_deseq2.R:66">R/m1b_deseq2.R:66</a>, <a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad831d5818f7dad3c/R/m1b_deseq2.R:70">R/m1b_deseq2.R:70</a>, <a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad831d5818f7dad3c/R/m1b_deseq2.R:74">R/m1b_deseq2.R:74</a>); these determine fitted effects and p-values.</li>
+<li>Genes are fitted first, but only <code>baseMean &gt; 1</code> genes enter per-cell-type q-value estimation (<a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad831d5818f7dad3c/R/m1b_deseq2.R:84">R/m1b_deseq2.R:84</a>); a gene exactly at 1 is not tested.</li>
+<li>Calls use strict cutoffs: q &lt; 0.05 and unshrunk |log2FC| &gt; 1 (<a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad831d5818f7dad3c/src/m1b_de.py:46">src/m1b_de.py:46</a>); for example q = 0.05 or log2FC = 1 produces no DE call.</li>
+</ul>
+<h2 id="3-decisions-the-user-didnt-make">3. Decisions the user didn't make</h2>
+<p>None found. The result-affecting settings and rerun definitions trace to approved O1–O7 and the contract.</p>
+<h2 id="4-the-lines-worth-reading-yourself">4. The lines worth reading yourself</h2>
+<ul>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad831d5818f7dad3c/R/m1b_deseq2.R:64">R/m1b_deseq2.R:64</a>: selects the paired model for the main analysis.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad831d5818f7dad3c/R/m1b_deseq2.R:73">R/m1b_deseq2.R:73</a>: fixes the biological direction as treatment minus control.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad831d5818f7dad3c/R/m1b_deseq2.R:84">R/m1b_deseq2.R:84</a>: defines which fitted genes enter multiple testing.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad831d5818f7dad3c/R/m1b_deseq2.R:87">R/m1b_deseq2.R:87</a>: performs q-value correction on that tested universe, separately inside each cell type.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad831d5818f7dad3c/src/m1b_de.py:186">src/m1b_de.py:186</a>: swaps condition labels within donors for the negative-control runs.</li>
+</ul>
+<h2 id="5-what-nothing-checks">5. What nothing checks</h2>
+<ul>
+<li>No independent oracle checks the numerical log2FC or p-value of a real gene. The simulation checks direction and calls, but not that, for example, the reported ISG15 log2FC agrees with an independently calculated paired estimate.</li>
+<li>No fingerprint ties the shipped CSVs to the current inputs/code. Tests can regenerate results, but a stale copied <code>m1b_de.csv</code> could still look structurally valid and pass the notebook's displays.</li>
+<li>M1b deliberately does not judge robustness. For example, whether a CD14+ monocyte call survives all leave-one-donor-out fits or appears in shuffled-label fits is deferred to M2.</li>
+</ul>
+<h2 id="6-verdict">6. Verdict</h2>
+<p>Ready for the user's scientific gate, with no process failure found. Fresh non-real-data execution: <strong>16 passed, 2 real-data tests deselected</strong>; the planted q-value-universe bug was caught by independent review and its T13 regression test now passes. Cheap checks on the shipped outputs found all 15,701 genes in every main cell type, no duplicate main keys, all 305 fits parametric, no unexplained main q-value NAs, and 14–84 Hallmark IFN-α genes called up per cell type (canonical ISGs were never down). Before approval, the user should inspect the notebook's DE counts/top-gene tables and volcano plots, especially the small megakaryocyte result (23 up, 4 down), and remember that robustness/negative-control interpretation remains an M2 gate.</p></body></html>

@@ -1,0 +1,57 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>M2a reviewer brief (Codex, commit 827bea4)</title><style>
+:root { --bg:#fcfcfb; --ink:#2b2b28; --muted:#5c5c57; --rule:#e6e6e3; --accent:#2a78d6; --code:#f3f3f1; }
+@media (prefers-color-scheme: dark) { :root { --bg:#1a1a19; --ink:#f2f2ef; --muted:#c3c2b7; --rule:#34342f; --accent:#6da7ec; --code:#262624; } }
+body { background:var(--bg); color:var(--ink); font:16px/1.6 -apple-system, "Segoe UI", sans-serif; max-width:52rem; margin:2rem auto; padding:0 16px; }
+h1 { font-size:1.6rem; border-bottom:1px solid var(--rule); padding-bottom:.4rem; }
+h2 { font-size:1.2rem; margin-top:2rem; color:var(--accent); }
+a { color:var(--accent); } li { margin:.35rem 0; }
+code { background:var(--code); padding:.1em .35em; border-radius:4px; font-size:.9em; }
+table { border-collapse:collapse; margin:1rem 0; } th, td { border:1px solid var(--rule); padding:.35rem .6rem; text-align:left; vertical-align:top; }
+nav { color:var(--muted); font-size:.9rem; border:1px solid var(--rule); border-radius:6px; padding:.5rem 1rem; }
+del { color:var(--muted); }
+</style></head><body><nav><strong>Contents</strong><div class="toc">
+<ul>
+<li><a href="#m2a-reviewer-brief-codex-commit-827bea4">M2a reviewer brief (Codex, commit 827bea4)</a><ul>
+<li><a href="#1-what-m2a-does-in-3-lines">1. What M2a does, in 3 lines</a></li>
+<li><a href="#2-assumptions-coded-in">2. Assumptions coded in</a></li>
+<li><a href="#3-decisions-the-user-didnt-make">3. Decisions the user didn't make</a></li>
+<li><a href="#4-the-lines-worth-reading-yourself">4. The lines worth reading yourself</a></li>
+<li><a href="#5-what-nothing-checks">5. What nothing checks</a></li>
+<li><a href="#6-verdict">6. Verdict</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</nav><h1 id="m2a-reviewer-brief-codex-commit-827bea4">M2a reviewer brief (Codex, commit 827bea4)</h1>
+<h2 id="1-what-m2a-does-in-3-lines">1. What M2a does, in 3 lines</h2>
+<p>Input: 125,608 main-DE rows (15,701 genes × 8 cell types), 910,658 LODO rows from <code>m1b_runs.csv</code>, and the 116 kept pseudobulk samples.
+Output: <code>m2_calls.csv</code>, 125,608 rows with re-derived up/down/none calls and LODO stability; 4,947 calls are DE and all 4,947 retain direction in every LODO refit.
+Output: <code>m2_table.csv</code>, 2,801 genes × 13 columns: 21 shared, 87 shared<em>, 856 partial, 241 specific, 1,585 specific</em>, and 11 mixed.</p>
+<h2 id="2-assumptions-coded-in">2. Assumptions coded in</h2>
+<ul>
+<li>Every gene must occur exactly once in each of the eight named cell types (<a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad1f077ceace0031e/src/m2a_calls.py:27">src/m2a_calls.py:27</a>, <a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad1f077ceace0031e/src/m2a_calls.py:32">src/m2a_calls.py:32</a>). This prevents a missing cell type from making a gene look specific.</li>
+<li>DE means <code>qvalue &lt; 0.05</code> and <code>|log2FC| &gt;= 1</code>, re-derived rather than trusting M1b's <code>de</code> column (<a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad1f077ceace0031e/src/m2a_calls.py:21">src/m2a_calls.py:21</a>). For example, q = 0.05 is not DE, while log2FC = 1 exactly can be.</li>
+<li>“Shared” requires one direction in all six well-powered types; DC and megakaryocytes may be rescued only by a tested CI reaching the same-direction threshold (<a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad1f077ceace0031e/src/m2a_calls.py:99">src/m2a_calls.py:99</a>, <a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad1f077ceace0031e/src/m2a_calls.py:105">src/m2a_calls.py:105</a>). Thus OAS2, DE in seven types, is <code>shared*</code>, not <code>shared</code>.</li>
+<li>A one-type call becomes <code>specific*</code> when a tested, non-DE cell type has a CI reaching either ±1 (<a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad1f077ceace0031e/src/m2a_calls.py:108">src/m2a_calls.py:108</a>). Untested or missing CIs do not count.</li>
+<li>LODO stability means sign only—not significance—and requires the exact omitted-donor run set: 8, 6, or 4 refits by cell type (<a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad1f077ceace0031e/src/m2a_calls.py:54">src/m2a_calls.py:54</a>, <a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad1f077ceace0031e/src/m2a_calls.py:62">src/m2a_calls.py:62</a>, <a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad1f077ceace0031e/src/m2a_calls.py:73">src/m2a_calls.py:73</a>). A zero refit effect is unstable.</li>
+<li>Any megakaryocyte DE call is retained but flagged lower confidence (<a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad1f077ceace0031e/src/m2a_calls.py:115">src/m2a_calls.py:115</a>); 27 genes carry that flag.</li>
+</ul>
+<h2 id="3-decisions-the-user-didnt-make">3. Decisions the user didn't make</h2>
+<p>None found. The thresholds, tested-only CI rule, label precedence, low-power handling, LODO definition, and megakaryocyte flag all trace to the approved contract or <code>audit/decisions.md</code>.</p>
+<h2 id="4-the-lines-worth-reading-yourself">4. The lines worth reading yourself</h2>
+<ul>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad1f077ceace0031e/src/m2a_calls.py:36">src/m2a_calls.py:36</a>: rebuilds DE calls from q-value and unshrunk log2FC; a wrong boundary silently changes arrows and gene inclusion.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad1f077ceace0031e/src/m2a_calls.py:73">src/m2a_calls.py:73</a>: defines “same sign” for every LODO refit; <code>&gt;= 0</code> here would make zero effects look stable.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad1f077ceace0031e/src/m2a_calls.py:105">src/m2a_calls.py:105</a>: implements same-direction <code>shared*</code> CI rescue; the planted <code>&gt; 1</code> bug looked plausible but lost exact-boundary genes.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad1f077ceace0031e/src/m2a_calls.py:109">src/m2a_calls.py:109</a>: sets label precedence (<code>mixed</code> before shared/partial/specific); reordering can plausibly relabel conflicting responses.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad1f077ceace0031e/src/m2a_calls.py:145">src/m2a_calls.py:145</a>: independently rebuilds every final label for traceability rather than calling <code>label_genes</code> again.</li>
+</ul>
+<h2 id="5-what-nothing-checks">5. What nothing checks</h2>
+<ul>
+<li>Numeric input validity is not asserted. For example, a row with <code>ci_low &gt; ci_high</code>, an infinite log2FC, or a non-boolean <code>tested</code> value could yield a plausible star/DE label instead of stopping; current upstream files do not show an observed mismatch, but no M2a test guards this.</li>
+<li>The two output writes are not atomic (<a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad1f077ceace0031e/src/m2a_calls.py:194">src/m2a_calls.py:194</a>). For example, a disk error after <code>m2_calls.csv</code> is replaced but before <code>m2_table.csv</code> is written could leave outputs from different runs; tests cover validation failures, not I/O interruption.</li>
+<li>The real-data test freezes aggregate label counts, not individual gene identities. A swap between two genes that preserves all six totals would escape T10, although the internal traceability assertion still checks the table against the same input on each run.</li>
+</ul>
+<h2 id="6-verdict">6. Verdict</h2>
+<p>No correctness defect found. <code>pytest tests/test_m2a.py tests/test_m2a_review.py -q</code> passes <strong>12/12</strong> on commit <code>827bea4</code>; the planted inclusive-CI bug was caught by T1 and T3. Independent checks found zero DE-rule mismatches and reproduced all output dimensions and label totals; classic ISGs are shared/shared<em> (for example, ISG15 and MX1 are shared, OAS2 and STAT1 shared</em>).</p>
+<p>Before approving M2a, the user should inspect the explained examples/output display and decide whether the scientifically dominant result is credible: <strong>1,585 of 2,801 genes are <code>specific*</code></strong>, versus 241 unstarred specific genes, because uncertainty in another tested cell type reaches ±1. They should also notice that all 4,947 DE calls are LODO direction-stable. These are consequences of approved rules, not implementation failures, but they drive the interpretation.</p></body></html>

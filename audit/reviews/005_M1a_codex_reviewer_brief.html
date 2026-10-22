@@ -1,0 +1,57 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>M1a reviewer brief (Codex, commit 02a32b3)</title><style>
+:root { --bg:#fcfcfb; --ink:#2b2b28; --muted:#5c5c57; --rule:#e6e6e3; --accent:#2a78d6; --code:#f3f3f1; }
+@media (prefers-color-scheme: dark) { :root { --bg:#1a1a19; --ink:#f2f2ef; --muted:#c3c2b7; --rule:#34342f; --accent:#6da7ec; --code:#262624; } }
+body { background:var(--bg); color:var(--ink); font:16px/1.6 -apple-system, "Segoe UI", sans-serif; max-width:52rem; margin:2rem auto; padding:0 16px; }
+h1 { font-size:1.6rem; border-bottom:1px solid var(--rule); padding-bottom:.4rem; }
+h2 { font-size:1.2rem; margin-top:2rem; color:var(--accent); }
+a { color:var(--accent); } li { margin:.35rem 0; }
+code { background:var(--code); padding:.1em .35em; border-radius:4px; font-size:.9em; }
+table { border-collapse:collapse; margin:1rem 0; } th, td { border:1px solid var(--rule); padding:.35rem .6rem; text-align:left; vertical-align:top; }
+nav { color:var(--muted); font-size:.9rem; border:1px solid var(--rule); border-radius:6px; padding:.5rem 1rem; }
+del { color:var(--muted); }
+</style></head><body><nav><strong>Contents</strong><div class="toc">
+<ul>
+<li><a href="#m1a-reviewer-brief-codex-commit-02a32b3">M1a reviewer brief (Codex, commit 02a32b3)</a><ul>
+<li><a href="#1-what-m1a-does-in-3-lines">1. What M1a does, in 3 lines</a></li>
+<li><a href="#2-assumptions-coded-in">2. Assumptions coded in</a></li>
+<li><a href="#3-decisions-the-user-didnt-make">3. Decisions the user didn't make</a></li>
+<li><a href="#4-the-lines-worth-reading-yourself">4. The lines worth reading yourself</a></li>
+<li><a href="#5-what-nothing-checks">5. What nothing checks</a></li>
+<li><a href="#6-verdict">6. Verdict</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</nav><h1 id="m1a-reviewer-brief-codex-commit-02a32b3">M1a reviewer brief (Codex, commit 02a32b3)</h1>
+<h2 id="1-what-m1a-does-in-3-lines">1. What M1a does, in 3 lines</h2>
+<p>Input: 24,562 cells × 15,701 genes of raw counts, with donor, condition, cell type and the 514 precomputed outlier flags.
+Pseudobulk: sums those cells into 128 donor × cell-type × condition samples; the approved 10-cell paired rule keeps 116 samples containing 24,451 cells (the no-outlier sensitivity input keeps 116 containing 23,941 of 24,048 cells).
+Outputs: 15,701-gene count matrices and sample tables, plus variance fractions for 51,581 cell-type × gene combinations across all 8 cell types, their VST values, fit types and 128 term-pair correlations.</p>
+<h2 id="2-assumptions-coded-in">2. Assumptions coded in</h2>
+<ul>
+<li>A sample is usable only when both conditions for that donor × cell type have at least 10 cells (<a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m1a_pseudobulk.py:97">src/m1a_pseudobulk.py:97</a>). For example, 9 control/12 stimulated drops both samples; this preserves pairing but excludes 111 cells from the main analysis.</li>
+<li>The input is raw, finite, non-negative integer counts (<a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m1a_pseudobulk.py:43">src/m1a_pseudobulk.py:43</a>). This matters because summing normalized expression would not produce valid DESeq2 counts.</li>
+<li>Every kept donor has exactly one sample in each of two conditions within each cell type (<a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/R/m1a_varpart.R:60">R/m1a_varpart.R:60</a>). This prevents a duplicated control row from masquerading as a pair.</li>
+<li>Genes enter variance partitioning separately by cell type only when DESeq2 normalized baseMean is strictly greater than 1 (<a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/R/m1a_varpart.R:66">R/m1a_varpart.R:66</a>). Thus a gene can be analysed in B cells but omitted in NK cells.</li>
+<li>Variance is fitted on blind DESeq2 VST values with donor and condition as random effects and log cell count and log total count as fixed effects (<a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/R/m1a_varpart.R:71">R/m1a_varpart.R:71</a>, <a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/R/m1a_varpart.R:77">R/m1a_varpart.R:77</a>). These choices determine what each reported fraction means.</li>
+</ul>
+<h2 id="3-decisions-the-user-didnt-make">3. Decisions the user didn't make</h2>
+<p>None found. The result-affecting choices in the implementation trace to the approved contract or <code>audit/decisions.md</code>, including the 10-cell rule, all-cells main analysis, no-outlier sensitivity input, transform, model, gene filter and pinned library parameters.</p>
+<h2 id="4-the-lines-worth-reading-yourself">4. The lines worth reading yourself</h2>
+<ul>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m1a_pseudobulk.py:83">src/m1a_pseudobulk.py:83</a>: the sparse matrix multiplication that actually sums cells into samples.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m1a_pseudobulk.py:97">src/m1a_pseudobulk.py:97</a>: the <code>&gt;= 10 in both conditions</code> rule; reversing this comparison would silently change included samples.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/R/m1a_varpart.R:67">R/m1a_varpart.R:67</a>: the strict, per-cell-type <code>baseMean &gt; 1</code> gene filter.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/R/m1a_varpart.R:71">R/m1a_varpart.R:71</a>: the blind VST and explicit parametric fit request.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/R/m1a_varpart.R:77">R/m1a_varpart.R:77</a>: the variance model and its explicit REML/weight settings; wrong terms could still produce plausible fractions.</li>
+</ul>
+<h2 id="5-what-nothing-checks">5. What nothing checks</h2>
+<ul>
+<li>The strict baseMean boundary has no running test: the user dropped T6. A future <code>&gt; 1</code> → <code>&gt;= 1</code> change could admit genes exactly at 1 without a failure.</li>
+<li>No numerical oracle checks <code>canCorPairs</code>; T8 checks only that malformed pairs are rejected. For example, swapping two term labels in the 128-row correlation output could remain unnoticed.</li>
+<li>The notebook's PCA coordinates and centroid-distance calculation are not asserted. For example, measuring distance after scaling genes instead of in the approved unscaled VST space could yield a convincing but different outlier plot.</li>
+<li>Regression sensitivity was not demonstrated because the user explicitly skipped Wave 1's planted-bug check. Passing tests therefore have not been shown to catch a controlled realistic defect.</li>
+</ul>
+<h2 id="6-verdict">6. Verdict</h2>
+<p>The targeted suite passes: <strong>12 passed, 1 skipped</strong> (T6), including real-data count conservation, the variance-partition oracle and the two review regressions. I independently confirmed 128/116 total/kept samples, 24,562 input cells, variance fractions summing to 1 within <code>2.3 × 10⁻15</code>, and parametric fits logged for all 8 cell types. No unapproved result-affecting choice or confirmed defect was found.</p>
+<p>Before approving M1a, the user must inspect the per-cell-type PCA/distances and the variance-fraction plus collinearity plots: those scientific judgments are intentionally not automated. Approval should retain the explicit evidence limits above, especially the untested baseMean boundary and skipped planted-bug check.</p></body></html>

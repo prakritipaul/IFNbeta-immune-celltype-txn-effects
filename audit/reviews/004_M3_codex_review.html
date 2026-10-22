@@ -1,0 +1,94 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>Codex review 1 and re-check: M3 (Wave 1)</title><style>
+:root { --bg:#fcfcfb; --ink:#2b2b28; --muted:#5c5c57; --rule:#e6e6e3; --accent:#2a78d6; --code:#f3f3f1; }
+@media (prefers-color-scheme: dark) { :root { --bg:#1a1a19; --ink:#f2f2ef; --muted:#c3c2b7; --rule:#34342f; --accent:#6da7ec; --code:#262624; } }
+body { background:var(--bg); color:var(--ink); font:16px/1.6 -apple-system, "Segoe UI", sans-serif; max-width:52rem; margin:2rem auto; padding:0 16px; }
+h1 { font-size:1.6rem; border-bottom:1px solid var(--rule); padding-bottom:.4rem; }
+h2 { font-size:1.2rem; margin-top:2rem; color:var(--accent); }
+a { color:var(--accent); } li { margin:.35rem 0; }
+code { background:var(--code); padding:.1em .35em; border-radius:4px; font-size:.9em; }
+table { border-collapse:collapse; margin:1rem 0; } th, td { border:1px solid var(--rule); padding:.35rem .6rem; text-align:left; vertical-align:top; }
+nav { color:var(--muted); font-size:.9rem; border:1px solid var(--rule); border-radius:6px; padding:.5rem 1rem; }
+del { color:var(--muted); }
+</style></head><body><nav><strong>Contents</strong><div class="toc">
+<ul>
+<li><a href="#codex-review-1-and-re-check-m3-wave-1">Codex review 1 and re-check: M3 (Wave 1)</a><ul>
+<li><a href="#review-1">Review 1</a></li>
+<li><a href="#re-check-after-fixes">Re-check after fixes</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</nav><h1 id="codex-review-1-and-re-check-m3-wave-1">Codex review 1 and re-check: M3 (Wave 1)</h1>
+<h2 id="review-1">Review 1</h2>
+<ol>
+<li>
+<p>Pytest: exact command failed during collection due Numba’s cache locator on the symlinked <code>.venv</code>; 0 tests ran. With <code>NUMBA_CACHE_DIR=/tmp/m3-numba-cache</code>, all <strong>9 passed</strong> in 45.30s.</p>
+</li>
+<li>
+<p>Findings</p>
+</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Severity</th>
+<th>file:line</th>
+<th>Finding</th>
+<th>Concrete failing scenario or reproducer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Medium</td>
+<td><a href="/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-a8f0f232b575fb976/src/m3_signature.py:193">src/m3_signature.py:193</a></td>
+<td>Outputs are not atomic, violating “nothing on failure.” Directories and files are written sequentially.</td>
+<td>Make the second <code>to_csv</code> or audit <code>write_text</code> raise: earlier output files remain, leaving a partial/stale M3 package.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Low</td>
+<td><a href="/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-a8f0f232b575fb976/src/m3_signature.py:79">src/m3_signature.py:79</a></td>
+<td><code>score_cells</code> preserves the input dtype instead of enforcing the approved float32 scoring decision. Real M0 data happens to be float32, but the public function is not reproducible for float64 inputs.</td>
+<td>Pass float64 <code>adata.X</code> and intercept <code>normalize_total</code> or <code>score_genes</code>; <code>work.X.dtype</code> remains float64. Current toy tests therefore exercise a different precision than the approved real-data path.</td>
+</tr>
+</tbody>
+</table>
+<ol>
+<li>
+<p>Proposed new tests</p>
+</li>
+<li>
+<p><code>test_run_m3_is_atomic_on_each_write_failure</code>: force failure on the second CSV write and audit Markdown write; assert no final output exists. Fails currently.</p>
+</li>
+<li>
+<p><code>test_score_cells_casts_working_matrix_to_float32</code>: supply float64 counts, intercept the scoring call, and assert <code>adata.X.dtype == np.float32</code>. Fails currently.</p>
+</li>
+<li>
+<p>Unapproved decision</p>
+</li>
+<li>
+<p>Preserving the input matrix dtype at line 79 instead of the approved <strong>float32 scoring</strong> choice. No other unapproved result-changing decisions found.</p>
+</li>
+</ol>
+<h2 id="re-check-after-fixes">Re-check after fixes</h2>
+<table>
+<thead>
+<tr>
+<th>Finding</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M3 #2: enforce float32 scoring</td>
+<td><strong>FIXED</strong></td>
+<td>Float64 input reached all three <code>score_genes</code> calls as float32; implementation explicitly casts at <a href="/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-a8f0f232b575fb976/src/m3_signature.py:79">m3_signature.py:79</a>.</td>
+</tr>
+</tbody>
+</table>
+<p>Pytest: <strong>10 passed in 33.04s</strong> (<code>tests/test_m3.py</code>: 9; <code>tests/test_m3_review.py</code>: 1).</p>
+<p>New issues introduced: <strong>none found</strong>. The only functional diff is the approved float32 cast; notebook changes are regenerated metadata. Atomic writes remain intentionally unchanged per the user’s decision.</p>
+<p>Overall verdict: <strong>PASS</strong>.</p></body></html>

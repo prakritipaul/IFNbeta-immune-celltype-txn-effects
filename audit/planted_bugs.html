@@ -1,0 +1,67 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>Planted-bug checks</title><style>
+:root { --bg:#fcfcfb; --ink:#2b2b28; --muted:#5c5c57; --rule:#e6e6e3; --accent:#2a78d6; --code:#f3f3f1; }
+@media (prefers-color-scheme: dark) { :root { --bg:#1a1a19; --ink:#f2f2ef; --muted:#c3c2b7; --rule:#34342f; --accent:#6da7ec; --code:#262624; } }
+body { background:var(--bg); color:var(--ink); font:16px/1.6 -apple-system, "Segoe UI", sans-serif; max-width:52rem; margin:2rem auto; padding:0 16px; }
+h1 { font-size:1.6rem; border-bottom:1px solid var(--rule); padding-bottom:.4rem; }
+h2 { font-size:1.2rem; margin-top:2rem; color:var(--accent); }
+a { color:var(--accent); } li { margin:.35rem 0; }
+code { background:var(--code); padding:.1em .35em; border-radius:4px; font-size:.9em; }
+table { border-collapse:collapse; margin:1rem 0; } th, td { border:1px solid var(--rule); padding:.35rem .6rem; text-align:left; vertical-align:top; }
+nav { color:var(--muted); font-size:.9rem; border:1px solid var(--rule); border-radius:6px; padding:.5rem 1rem; }
+del { color:var(--muted); }
+</style></head><body><nav><strong>Contents</strong><div class="toc">
+<ul>
+<li><a href="#planted-bug-checks">Planted-bug checks</a></li>
+</ul>
+</div>
+</nav><h1 id="planted-bug-checks">Planted-bug checks</h1>
+<p>A small, realistic bug is planted on a throwaway branch without telling the reviewers, to test whether the tests and reviews catch it. The bug never reaches <code>planning</code>/<code>main</code>. The bug was written down before any check ran.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Module</th>
+<th>Bug planted</th>
+<th>Tests</th>
+<th>Codex review (not told)</th>
+<th>Gap closed by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>M0</td>
+<td><code>flag_qc</code> outlier loop checks only <code>n_counts</code>; <code>n_genes</code> dropped ("tidy flag_qc loop")</td>
+<td><strong>Missed</strong>: 24/24 passed</td>
+<td><strong>Caught</strong> as finding #1 (high): "a cell with ordinary total counts but log1p(n_genes) more than 5 MADs … receives flag_outlier=False"</td>
+<td>T18: passes on the real code, <strong>fails on the bugged code</strong></td>
+</tr>
+<tr>
+<td>2</td>
+<td>M1b</td>
+<td><code>R/m1b_deseq2.R</code>: qvalue run on <strong>all</strong> genes with a p-value (incl. baseMean ≤ 1), untested genes masked afterwards ("qvalue universe")</td>
+<td><strong>Missed</strong>: 15/15 fast tests passed (real-data T7/T11 not run)</td>
+<td><strong>Caught</strong> as finding #1 (high): toy p = 0.0001 gives q 0.019 tested-only vs 0.040 with all genes</td>
+<td>T13: passes on the real code, <strong>fails on the bugged code</strong></td>
+</tr>
+<tr>
+<td>3</td>
+<td>M2a</td>
+<td><code>label_genes</code>: upward shared* rescue uses <code>ci_high &gt; 1</code> instead of <code>≥ 1</code> (boundary)</td>
+<td><strong>Caught</strong>: T1 and T3 failed (2 of 12)</td>
+<td><strong>Caught</strong> as finding #1 (medium), with a reproducer; also noted the independent traceability check would abort the real run</td>
+<td>Not needed: tests already catch it</td>
+</tr>
+<tr>
+<td>4</td>
+<td>M2c</td>
+<td><code>R/m2c_fgsea.R</code>: BH run <strong>per collection</strong> (Hallmark and KEGG separately) instead of over both within the cell type</td>
+<td><strong>Missed</strong>: 10/10 passed (T7 supplied precomputed padj)</td>
+<td><strong>Caught</strong> as finding #1 (high)</td>
+<td>T11: passes on the real code, <strong>fails on the bugged code</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why the tests missed it:</strong> every outlier test (T6, T16) holds <code>n_genes</code> constant, so dropping the genes metric changed no expected value.</p>
+<p><strong>M1b, why the tests missed it:</strong> T4 checks that untested genes get no q-value, and T5 that cell types don't share a correction, but nothing checked <em>which</em> p-values qvalue was run on within a cell type.</p>
+<p><strong>M2c, why the tests missed it:</strong> T7 checked the significance boundary on padj values handed in directly, so nothing exercised the R script's BH step; Codex had flagged exactly this weakness in its review.</p></body></html>

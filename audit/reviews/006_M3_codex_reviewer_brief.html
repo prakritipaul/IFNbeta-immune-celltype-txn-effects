@@ -1,0 +1,58 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>M3 reviewer brief (Codex, commit 02a32b3)</title><style>
+:root { --bg:#fcfcfb; --ink:#2b2b28; --muted:#5c5c57; --rule:#e6e6e3; --accent:#2a78d6; --code:#f3f3f1; }
+@media (prefers-color-scheme: dark) { :root { --bg:#1a1a19; --ink:#f2f2ef; --muted:#c3c2b7; --rule:#34342f; --accent:#6da7ec; --code:#262624; } }
+body { background:var(--bg); color:var(--ink); font:16px/1.6 -apple-system, "Segoe UI", sans-serif; max-width:52rem; margin:2rem auto; padding:0 16px; }
+h1 { font-size:1.6rem; border-bottom:1px solid var(--rule); padding-bottom:.4rem; }
+h2 { font-size:1.2rem; margin-top:2rem; color:var(--accent); }
+a { color:var(--accent); } li { margin:.35rem 0; }
+code { background:var(--code); padding:.1em .35em; border-radius:4px; font-size:.9em; }
+table { border-collapse:collapse; margin:1rem 0; } th, td { border:1px solid var(--rule); padding:.35rem .6rem; text-align:left; vertical-align:top; }
+nav { color:var(--muted); font-size:.9rem; border:1px solid var(--rule); border-radius:6px; padding:.5rem 1rem; }
+del { color:var(--muted); }
+</style></head><body><nav><strong>Contents</strong><div class="toc">
+<ul>
+<li><a href="#m3-reviewer-brief-codex-commit-02a32b3">M3 reviewer brief (Codex, commit 02a32b3)</a><ul>
+<li><a href="#1-what-m3-does-in-3-lines">1. What M3 does, in 3 lines</a></li>
+<li><a href="#2-assumptions-coded-in">2. Assumptions coded in</a></li>
+<li><a href="#3-decisions-the-user-didnt-make">3. Decisions the user didn't make</a></li>
+<li><a href="#4-the-lines-worth-reading-yourself">4. The lines worth reading yourself</a></li>
+<li><a href="#5-what-nothing-checks">5. What nothing checks</a></li>
+<li><a href="#6-verdict">6. Verdict</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</nav><h1 id="m3-reviewer-brief-codex-commit-02a32b3">M3 reviewer brief (Codex, commit 02a32b3)</h1>
+<h2 id="1-what-m3-does-in-3-lines">1. What M3 does, in 3 lines</h2>
+<ul>
+<li>Input: 24,562 filtered cells × 15,701 genes plus MSigDB 2026.1 Hallmark IFN-α (97 genes) and IFN-γ (200 genes), both at 100% coverage after six approved symbol mappings.</li>
+<li>Processing: scores every cell for IFN-α, full IFN-γ, and IFN-γ with the 73 shared genes removed (127 genes remain).</li>
+<li>Outputs: <code>m3_cell_scores.csv</code> has 24,562 unique cells × 7 columns; <code>m3_sample_scores.csv</code> has 116 donor × cell-type × condition rows × 7 columns, retaining 24,451 cells after the approved paired 10-cell rule.</li>
+</ul>
+<h2 id="2-assumptions-coded-in">2. Assumptions coded in</h2>
+<ul>
+<li>The GMT must have the approved SHA-256 and both named Hallmark sets (<a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m3_signature.py:34">src/m3_signature.py:34</a>, <a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m3_signature.py:41">src/m3_signature.py:41</a>); this prevents a different release from silently changing the scores.</li>
+<li>Only the six approved symbol mappings are allowed, and every mapped gene must exist (<a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m3_signature.py:55">src/m3_signature.py:55</a>, <a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m3_signature.py:65">src/m3_signature.py:65</a>); for example, <code>PSMA2</code> must map to <code>PSMA2.1</code>, not be dropped.</li>
+<li>Counts are cast to float32, normalized to 10,000 per cell, natural-log transformed, then scored with the approved fixed Scanpy parameters (<a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m3_signature.py:79">src/m3_signature.py:79</a>, <a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m3_signature.py:82">src/m3_signature.py:82</a>, <a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m3_signature.py:89">src/m3_signature.py:89</a>); these choices set the numerical score scale.</li>
+<li>The IFN-γ specificity control removes every gene also in IFN-α (<a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m3_signature.py:84">src/m3_signature.py:84</a>); this changes the full 200-gene set to a 127-gene control.</li>
+<li>Sample scores are cell means, and a donor is retained for a cell type only when every condition has at least 10 cells (<a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m3_signature.py:117">src/m3_signature.py:117</a>, <a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m3_signature.py:121">src/m3_signature.py:121</a>); for example, 9 control/12 stimulated drops both rows.</li>
+</ul>
+<h2 id="3-decisions-the-user-didnt-make">3. Decisions the user didn't make</h2>
+<p>None found. Every result-affecting choice I found is in the approved contract or <code>audit/decisions.md</code>.</p>
+<h2 id="4-the-lines-worth-reading-yourself">4. The lines worth reading yourself</h2>
+<ul>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m3_signature.py:56">src/m3_signature.py:56</a>: applies the exact gene-symbol substitutions; a plausible wrong mapping changes a signature without crashing.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m3_signature.py:82">src/m3_signature.py:82</a>: performs per-cell library-size normalization; scoring raw counts would turn depth into apparent IFN response.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m3_signature.py:87">src/m3_signature.py:87</a>: constructs IFN-γ without shared genes; subtracting the wrong set would undermine the specificity comparison.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m3_signature.py:118">src/m3_signature.py:118</a>: takes the mean cell score per sample; a median here would quietly change every donor-level result.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m3_signature.py:123">src/m3_signature.py:123</a>: applies the paired 10-cell threshold; <code>&gt; 10</code> instead of <code>&gt;= 10</code> would silently discard boundary samples.</li>
+</ul>
+<h2 id="5-what-nothing-checks">5. What nothing checks</h2>
+<ul>
+<li>No test supplies a heterogeneous toy matrix with an independently calculated expected Scanpy score. The current tests check invariants and passed parameters, so code that negated all three computed scores after scoring could still pass: zero remains zero, proportional cells remain equal, and real-data row counts remain correct.</li>
+<li>The notebook reports P5, P6, and I6 but deliberately assigns no pass/fail criteria. For example, it displays score-versus-library-size correlations but nothing asserts how large a within-cell-type/condition correlation is acceptable; that scientific judgment remains with the user.</li>
+<li>The planted-bug check was skipped for Wave 1 by the user's recorded decision, so M3 has no evidence that its suite catches an unknown realistic mutation.</li>
+</ul>
+<h2 id="6-verdict">6. Verdict</h2>
+<p>The targeted suite passes: <strong>10/10 tests</strong> (<code>tests/test_m3.py</code> and <code>tests/test_m3_review.py</code>, including the real-data rerun). I independently confirmed the saved row counts, unique barcodes, 116-sample pairing pattern, 100% gene-set coverage, and absence of missing/non-finite scores. The paired median IFN-α increase is positive in all eight cell types (0.452 to 0.898), which is directionally sensible but not an independent biological validation.</p>
+<p>Before approving M3, the user should inspect the notebook's three scientific diagnostics: donor-paired increases (P5), whether IFN-α still exceeds IFN-γ after shared genes are removed (P6), and within-cell-type/condition dependence on library size (I6). Approval should acknowledge the missing independent numerical-score oracle and the skipped planted-bug check.</p></body></html>

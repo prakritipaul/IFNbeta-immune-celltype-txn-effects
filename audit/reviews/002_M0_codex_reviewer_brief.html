@@ -1,0 +1,56 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>M0 reviewer brief (Codex, commit 142cec1)</title><style>
+:root { --bg:#fcfcfb; --ink:#2b2b28; --muted:#5c5c57; --rule:#e6e6e3; --accent:#2a78d6; --code:#f3f3f1; }
+@media (prefers-color-scheme: dark) { :root { --bg:#1a1a19; --ink:#f2f2ef; --muted:#c3c2b7; --rule:#34342f; --accent:#6da7ec; --code:#262624; } }
+body { background:var(--bg); color:var(--ink); font:16px/1.6 -apple-system, "Segoe UI", sans-serif; max-width:52rem; margin:2rem auto; padding:0 16px; }
+h1 { font-size:1.6rem; border-bottom:1px solid var(--rule); padding-bottom:.4rem; }
+h2 { font-size:1.2rem; margin-top:2rem; color:var(--accent); }
+a { color:var(--accent); } li { margin:.35rem 0; }
+code { background:var(--code); padding:.1em .35em; border-radius:4px; font-size:.9em; }
+table { border-collapse:collapse; margin:1rem 0; } th, td { border:1px solid var(--rule); padding:.35rem .6rem; text-align:left; vertical-align:top; }
+nav { color:var(--muted); font-size:.9rem; border:1px solid var(--rule); border-radius:6px; padding:.5rem 1rem; }
+del { color:var(--muted); }
+</style></head><body><nav><strong>Contents</strong><div class="toc">
+<ul>
+<li><a href="#m0-reviewer-brief-codex-commit-142cec1">M0 reviewer brief (Codex, commit 142cec1)</a><ul>
+<li><a href="#1-what-m0-does-in-3-lines">1. What M0 does, in 3 lines</a></li>
+<li><a href="#2-assumptions-coded-in">2. Assumptions coded in</a></li>
+<li><a href="#3-decisions-she-didnt-make">3. Decisions she didn't make</a></li>
+<li><a href="#4-the-lines-worth-reading-yourself">4. The lines worth reading yourself</a></li>
+<li><a href="#5-what-nothing-checks">5. What nothing checks</a></li>
+<li><a href="#6-verdict">6. Verdict</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</nav><h1 id="m0-reviewer-brief-codex-commit-142cec1">M0 reviewer brief (Codex, commit 142cec1)</h1>
+<h2 id="1-what-m0-does-in-3-lines">1. What M0 does, in 3 lines</h2>
+<p>Reads the Kang count matrix (24,673 cells × 15,706 genes) and GEO metadata (29,065 droplets), then joins all 24,673 cells to the authors' labels using barcode sequence + condition.
+Computes counts, detected genes and % ribosomal; the approved filters remove 111 cells and 5 genes, leaving 24,562 × 15,701.
+Writes <code>m0_cells.h5ad</code>, cell accounting and EDA/QC reports; 514 outliers and 7 small donor–condition–cell-type groups are flagged, not removed.</p>
+<h2 id="2-assumptions-coded-in">2. Assumptions coded in</h2>
+<ul>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m0_qc.py:109">src/m0_qc.py:109</a>: identity is barcode sequence + condition. This keeps the 234 barcode sequences present in both runs as 468 distinct cells.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m0_qc.py:118">src/m0_qc.py:118</a>: donor, cluster and t-SNE must agree between files, and every joined cell must be a singlet. A mismatched source stops rather than silently relabelling cells.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m0_qc.py:180">src/m0_qc.py:180</a>: cells are filtered first at ≥200 detected genes, then genes at ≥3 cells across the survivors. Reversing that order can change the retained gene list.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m0_qc.py:214">src/m0_qc.py:214</a>: outliers are assessed within donor × condition × cell type, on log counts <strong>or</strong> log genes, with groups under 10 skipped. For example, a high-RNA dendritic cell is compared with dendritic cells, not pooled T cells.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m0_qc.py:255">src/m0_qc.py:255</a>: the result must have one recognized control and one treatment, 8 donors with both conditions, unique gene symbols, and the exact 8 author cell-type names.</li>
+</ul>
+<h2 id="3-decisions-she-didnt-make">3. Decisions she didn't make</h2>
+<p>None found. Result-affecting thresholds, grouping, ribosomal-gene definition, retained cells/donors/cell types, and condition handling are recorded in the contract or <code>audit/decisions.md</code>.</p>
+<h2 id="4-the-lines-worth-reading-yourself">4. The lines worth reading yourself</h2>
+<ul>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m0_qc.py:113">src/m0_qc.py:113</a>: constructs the cell-side join key; a plausible wrong key would silently swap or lose stimulated collision barcodes.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m0_qc.py:167">src/m0_qc.py:167</a>: defines % ribosomal as ribosomal counts / total counts; a wrong axis or denominator would still yield plausible percentages.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/src/m0_qc.py:218">src/m0_qc.py:218</a>: unions the two MAD tests; the planted bug removed <code>n_genes</code>, passed the original tests, and was caught in review.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/notebooks/00_eda.py:183">notebooks/00_eda.py:183</a>: checks the notebook's filtering agrees in shape with the independently rerun pipeline.</li>
+<li><a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/notebooks/00_eda.py:346">notebooks/00_eda.py:346</a>: computes stimulated-minus-control composition shifts; reversing this subtraction would reverse the biological interpretation without crashing.</li>
+</ul>
+<h2 id="5-what-nothing-checks">5. What nothing checks</h2>
+<ul>
+<li>No test executes or visually judges <code>00_eda.ipynb</code>. For example, swapped colours or obscured points in the t-SNE could survive while every numerical test passes.</li>
+<li>No assertion pins the real-data final counts and flags to 24,562 cells, 15,701 genes, 514 outliers and 7 small groups. I independently confirmed the saved shape and 514 flags, but a future intentional threshold change could alter them without a focused regression failure.</li>
+<li>The notebook recomputes tables using the same functions as the pipeline. For example, its per-metric outlier assertion would not detect a shared error in <code>mad_outlier</code>; the toy oracle tests, not that notebook assertion, provide the independent check.</li>
+<li>The tests establish code behavior, not scientific adequacy: they cannot decide whether the 514 retained outliers, the 4 paired megakaryocyte donors, or the unmodelled condition/10x-run confounding make later conclusions credible.</li>
+</ul>
+<h2 id="6-verdict">6. Verdict</h2>
+<p><strong>Ready for owner review, not automatic approval.</strong> All 35 tests pass (including real-data tests); the planted one-metric outlier bug was caught by review and T18 now fails on that bug. Before approving M0, inspect the executed notebook's authors' t-SNE, the two donor × condition × cell-type outlier panels, the composition plot (especially patient_107), and covariate plots (% ribosomal by condition/donor). Confirm that these visuals support the already-recorded choices to keep all cells, donors and cell types and to treat 10x-run confounding as a caveat.</p></body></html>

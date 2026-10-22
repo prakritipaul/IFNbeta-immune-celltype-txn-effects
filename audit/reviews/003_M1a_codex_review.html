@@ -1,0 +1,115 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>Codex review 1 and re-check: M1a (Wave 1)</title><style>
+:root { --bg:#fcfcfb; --ink:#2b2b28; --muted:#5c5c57; --rule:#e6e6e3; --accent:#2a78d6; --code:#f3f3f1; }
+@media (prefers-color-scheme: dark) { :root { --bg:#1a1a19; --ink:#f2f2ef; --muted:#c3c2b7; --rule:#34342f; --accent:#6da7ec; --code:#262624; } }
+body { background:var(--bg); color:var(--ink); font:16px/1.6 -apple-system, "Segoe UI", sans-serif; max-width:52rem; margin:2rem auto; padding:0 16px; }
+h1 { font-size:1.6rem; border-bottom:1px solid var(--rule); padding-bottom:.4rem; }
+h2 { font-size:1.2rem; margin-top:2rem; color:var(--accent); }
+a { color:var(--accent); } li { margin:.35rem 0; }
+code { background:var(--code); padding:.1em .35em; border-radius:4px; font-size:.9em; }
+table { border-collapse:collapse; margin:1rem 0; } th, td { border:1px solid var(--rule); padding:.35rem .6rem; text-align:left; vertical-align:top; }
+nav { color:var(--muted); font-size:.9rem; border:1px solid var(--rule); border-radius:6px; padding:.5rem 1rem; }
+del { color:var(--muted); }
+</style></head><body><nav><strong>Contents</strong><div class="toc">
+<ul>
+<li><a href="#codex-review-1-and-re-check-m1a-wave-1">Codex review 1 and re-check: M1a (Wave 1)</a><ul>
+<li><a href="#review-1">Review 1</a></li>
+<li><a href="#re-check-after-fixes">Re-check after fixes</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</nav><h1 id="codex-review-1-and-re-check-m1a-wave-1">Codex review 1 and re-check: M1a (Wave 1)</h1>
+<h2 id="review-1">Review 1</h2>
+<ol>
+<li>
+<p>Pytest: <strong>9 passed, 1 skipped</strong> in 63.21s. The skip is the user-approved dropped T6. Snapshot: <code>23b171382c39442d5f9950536ee150046819d1df</code>.</p>
+</li>
+<li>
+<p>Findings</p>
+</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Severity</th>
+<th>file:line</th>
+<th>Finding</th>
+<th>Concrete failing scenario or reproducer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>High</td>
+<td><a href="/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-acfad106b7a1d751e/R/m1a_varpart.R:59">R/m1a_varpart.R:59</a>, <a href="/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-acfad106b7a1d751e/R/m1a_cancor.R:22">R/m1a_cancor.R:22</a></td>
+<td>Pairing validation checks only two rows per donor, not one row for each condition. Malformed unpaired metadata is accepted and produces apparently valid variance fractions. <code>m1a_cancor.R</code> has no pairing check.</td>
+<td>Constructed 16 samples where <code>d0</code> had two controls, <code>d1</code> two treatments, and the other donors were paired. <code>m1a_varpart.R</code> exited successfully and wrote all three outputs.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Medium</td>
+<td><a href="/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-acfad106b7a1d751e/notebooks/m1a_pseudobulk.py:32">notebooks/m1a_pseudobulk.py:32</a>, <a href="/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-acfad106b7a1d751e/notebooks/m1a_pseudobulk.py:79">notebooks/m1a_pseudobulk.py:79</a>, <a href="/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-acfad106b7a1d751e/notebooks/m1a_pseudobulk.py:106">notebooks/m1a_pseudobulk.py:106</a></td>
+<td>The notebook hardcodes <code>ctrl</code>/<code>stim</code> instead of obtaining the declared control/treatment labels. This contradicts the requested condition-label robustness.</td>
+<td>Valid outputs using labels <code>control</code>/<code>treated</code> fail at the pivot selection or colour lookup.</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Low</td>
+<td><a href="/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-acfad106b7a1d751e/src/m1a_pseudobulk.py:75">src/m1a_pseudobulk.py:75</a>, <a href="/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-acfad106b7a1d751e/src/m1a_pseudobulk.py:83">src/m1a_pseudobulk.py:83</a></td>
+<td>Sample metadata is reconstructed by splitting an unescaped <code>\|</code>-delimited ID. A delimiter inside any label silently corrupts the output schema.</td>
+<td>With cell type <code>A\|B</code>, the returned metadata becomes <code>cell_type=A</code>, <code>donor=B</code>, <code>condition=d</code>; both samples are incorrectly marked dropped.</td>
+</tr>
+</tbody>
+</table>
+<ol>
+<li>
+<p>Proposed new tests</p>
+</li>
+<li>
+<p>Pass duplicated same-condition rows for one donor to both R scripts; require a non-zero exit and no output files.</p>
+</li>
+<li>Execute the notebook against otherwise-valid fixtures whose condition labels are <code>control</code>/<code>treated</code>; require successful completion and both labels in the plots/tables.</li>
+<li>
+<p>Call <code>pseudobulk</code> with <code>|</code> in a donor or cell-type label; require an explicit <code>ValueError</code> before aggregation.</p>
+</li>
+<li>
+<p>Unapproved decisions</p>
+</li>
+</ol>
+<p>None. The hardcoded condition names are an implementation violation, not a documented decision.</p>
+<h2 id="re-check-after-fixes">Re-check after fixes</h2>
+<table>
+<thead>
+<tr>
+<th>Finding</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M1a #1 — R pairing validation</td>
+<td>FIXED</td>
+<td>Both scripts rejected duplicated same-condition rows, exited non-zero, and wrote no outputs.</td>
+</tr>
+<tr>
+<td>M1a #2 — notebook condition labels</td>
+<td>FIXED</td>
+<td>Notebook ran end-to-end with <code>control</code>/<code>treated</code>; both labels appeared correctly in outputs and plots.</td>
+</tr>
+<tr>
+<td>M1a #3 — pipe-delimited labels</td>
+<td>FIXED</td>
+<td>Donor and cell-type labels containing <code>\|</code> raised <code>ValueError</code> before aggregation.</td>
+</tr>
+<tr>
+<td>M3 #2 — explicit float32 cast</td>
+<td>NOT FIXED</td>
+<td><code>src/m3_signature.py</code> is absent from this branch; the reproducer fails during collection with <code>ModuleNotFoundError</code>. No M3 source fix appears in the diff.</td>
+</tr>
+</tbody>
+</table>
+<p>Pytest: <strong>12 passed, 1 skipped in 62.49s</strong>. The skip is the user-approved dropped T6.</p>
+<p>No new M1a issue was introduced by the fixes.</p>
+<p><strong>Overall: PARTIAL</strong> — M1a passes step 6; the approved M3 fix is missing from this branch.</p></body></html>

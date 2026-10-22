@@ -1,0 +1,66 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>M0 Codex review of the planted-bug snapshot (not told about the bug)</title><style>
+:root { --bg:#fcfcfb; --ink:#2b2b28; --muted:#5c5c57; --rule:#e6e6e3; --accent:#2a78d6; --code:#f3f3f1; }
+@media (prefers-color-scheme: dark) { :root { --bg:#1a1a19; --ink:#f2f2ef; --muted:#c3c2b7; --rule:#34342f; --accent:#6da7ec; --code:#262624; } }
+body { background:var(--bg); color:var(--ink); font:16px/1.6 -apple-system, "Segoe UI", sans-serif; max-width:52rem; margin:2rem auto; padding:0 16px; }
+h1 { font-size:1.6rem; border-bottom:1px solid var(--rule); padding-bottom:.4rem; }
+h2 { font-size:1.2rem; margin-top:2rem; color:var(--accent); }
+a { color:var(--accent); } li { margin:.35rem 0; }
+code { background:var(--code); padding:.1em .35em; border-radius:4px; font-size:.9em; }
+table { border-collapse:collapse; margin:1rem 0; } th, td { border:1px solid var(--rule); padding:.35rem .6rem; text-align:left; vertical-align:top; }
+nav { color:var(--muted); font-size:.9rem; border:1px solid var(--rule); border-radius:6px; padding:.5rem 1rem; }
+del { color:var(--muted); }
+</style></head><body><nav><strong>Contents</strong><div class="toc">
+<ul>
+<li><a href="#m0-codex-review-of-the-planted-bug-snapshot-not-told-about-the-bug">M0 Codex review of the planted-bug snapshot (not told about the bug)</a></li>
+</ul>
+</div>
+</nav><h1 id="m0-codex-review-of-the-planted-bug-snapshot-not-told-about-the-bug">M0 Codex review of the planted-bug snapshot (not told about the bug)</h1>
+<p>Finding #1 is the planted bug (caught). Findings #2–#5 are real observations about the actual code (the planted change touched only the outlier loop), to be decided by the user.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">#</th>
+<th>Severity</th>
+<th>file:line</th>
+<th>Finding</th>
+<th>Concrete failing scenario</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">1</td>
+<td>High</td>
+<td><code>src/m0_qc.py:206</code></td>
+<td>Outlier detection evaluates only <code>n_counts</code>; the approved decision requires the union of outliers from log counts <strong>and log genes detected</strong>.</td>
+<td>A cell with ordinary total counts but <code>log1p(n_genes)</code> more than 5 raw MADs from its donor × condition × cell-type median receives <code>flag_outlier=False</code>.</td>
+</tr>
+<tr>
+<td style="text-align: right;">2</td>
+<td>Medium</td>
+<td><code>src/m0_qc.py:63</code></td>
+<td>Required input dimensions are never checked: 24,673 × 15,706 for the h5ad and 29,065 GEO rows.</td>
+<td>A truncated GEO table containing every h5ad cell, or a structurally valid subset h5ad retaining eight donors and cell types, can pass and produce results despite violating the contract.</td>
+</tr>
+<tr>
+<td style="text-align: right;">3</td>
+<td>Medium</td>
+<td><code>src/m0_qc.py:74</code></td>
+<td>The raw-count validation accepts positive infinity because <code>inf &gt;= 0</code> and <code>round(inf) == inf</code>.</td>
+<td>An <code>X</code> entry of <code>np.inf</code> passes <code>load_inputs</code>, then yields infinite library size and invalid downstream QC metrics instead of raising <code>ValueError</code>.</td>
+</tr>
+<tr>
+<td style="text-align: right;">4</td>
+<td>Medium</td>
+<td><code>src/m0_qc.py:264</code></td>
+<td>Threshold arguments are not validated, contradicting the module guarantee that invalid input raises <code>ValueError</code>.</td>
+<td><code>run_m0(..., min_genes=-1, min_cells=-1, n_mads=-1)</code> runs and writes output; the negative MAD threshold flags every assessed cell.</td>
+</tr>
+<tr>
+<td style="text-align: right;">5</td>
+<td>Medium</td>
+<td><code>src/m0_qc.py:264</code></td>
+<td>Production identity checks are optional: both hashes and the expected cell-type names default to <code>None</code>, so the approved GEO fingerprint and eight exact author labels can be bypassed.</td>
+<td>Calling <code>run_m0</code> with an altered GEO file containing eight misspelled but unique cell-type labels, while omitting the optional arguments, can write a contract-invalid output.</td>
+</tr>
+</tbody>
+</table></body></html>

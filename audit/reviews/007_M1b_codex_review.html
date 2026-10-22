@@ -1,0 +1,111 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>Codex review 1 and re-check: M1b (Wave 2)</title><style>
+:root { --bg:#fcfcfb; --ink:#2b2b28; --muted:#5c5c57; --rule:#e6e6e3; --accent:#2a78d6; --code:#f3f3f1; }
+@media (prefers-color-scheme: dark) { :root { --bg:#1a1a19; --ink:#f2f2ef; --muted:#c3c2b7; --rule:#34342f; --accent:#6da7ec; --code:#262624; } }
+body { background:var(--bg); color:var(--ink); font:16px/1.6 -apple-system, "Segoe UI", sans-serif; max-width:52rem; margin:2rem auto; padding:0 16px; }
+h1 { font-size:1.6rem; border-bottom:1px solid var(--rule); padding-bottom:.4rem; }
+h2 { font-size:1.2rem; margin-top:2rem; color:var(--accent); }
+a { color:var(--accent); } li { margin:.35rem 0; }
+code { background:var(--code); padding:.1em .35em; border-radius:4px; font-size:.9em; }
+table { border-collapse:collapse; margin:1rem 0; } th, td { border:1px solid var(--rule); padding:.35rem .6rem; text-align:left; vertical-align:top; }
+nav { color:var(--muted); font-size:.9rem; border:1px solid var(--rule); border-radius:6px; padding:.5rem 1rem; }
+del { color:var(--muted); }
+</style></head><body><nav><strong>Contents</strong><div class="toc">
+<ul>
+<li><a href="#codex-review-1-and-re-check-m1b-wave-2">Codex review 1 and re-check: M1b (Wave 2)</a><ul>
+<li><a href="#review-1">Review 1</a></li>
+<li><a href="#re-check-after-fixes">Re-check after fixes</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</nav><h1 id="codex-review-1-and-re-check-m1b-wave-2">Codex review 1 and re-check: M1b (Wave 2)</h1>
+<h2 id="review-1">Review 1</h2>
+<ol>
+<li>
+<p>Pytest: <code>14 passed, 2 deselected in 159.04s</code> using the requested command.</p>
+</li>
+<li>
+<p>Findings</p>
+</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Severity</th>
+<th>file:line</th>
+<th>Finding</th>
+<th>Concrete failing scenario or reproducer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>medium</td>
+<td><a href="/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad831d5818f7dad3c/src/m1b_de.py:131">src/m1b_de.py:131</a></td>
+<td>R-output validation checks gene counts and uniqueness, but not that returned gene identities equal the input genes. M2 could therefore receive silently substituted/missing genes.</td>
+<td>A fake R result replacing <code>real_a, real_b</code> with <code>wrong_a, wrong_b</code> was accepted; <code>run_deseq2()</code> returned <code>ACCEPTED_GENES ['wrong_a', 'wrong_b']</code>.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>low</td>
+<td><a href="/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad831d5818f7dad3c/src/m1b_de.py:213">src/m1b_de.py:213</a></td>
+<td><code>m1b_de.csv</code> contains <code>run</code>, although the approved contract says <code>m1b_runs.csv</code> has the same schema <strong>plus</strong> <code>run</code>. The real file has 15 columns, including constant <code>run="main"</code>.</td>
+<td>An exact-schema assertion derived from the contract fails. Existing T8 instead includes <code>run</code> in its expected main-file schema, so it codifies the mismatch.</td>
+</tr>
+<tr>
+<td>3</td>
+<td>low</td>
+<td><a href="/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad831d5818f7dad3c/notebooks/m1b_de.py:44">notebooks/m1b_de.py:44</a></td>
+<td>The notebook reloads all columns of <code>m1b_runs.csv</code> solely to display its shape/head/tail, after already loading selected columns. The real file is 785 MB, creating avoidable multi-GB memory pressure and risking failure of the required return-package notebook.</td>
+<td>Instrument <code>pd.read_csv</code> to reject unrestricted reads of <code>m1b_runs.csv</code>; execution fails at line 46.</td>
+</tr>
+</tbody>
+</table>
+<ol>
+<li>
+<p>Proposed NEW tests</p>
+</li>
+<li>
+<p>R-boundary gene-set test: fake an R response with the correct row count but one substituted gene; require <code>run_deseq2()</code> to raise <code>ValueError</code>. This fails currently.</p>
+</li>
+<li>Exact output-schema test: require <code>m1b_de.csv</code> to omit <code>run</code>, while <code>m1b_runs.csv</code> includes it; also assert exact column order and key uniqueness. This fails currently.</li>
+<li>
+<p>Notebook large-file access test: execute/instrument the notebook and forbid a full unrestricted <code>read_csv</code> of <code>m1b_runs.csv</code>; require chunked/head-tail access. This fails currently.</p>
+</li>
+<li>
+<p>Unapproved decisions</p>
+</li>
+</ol>
+<p>None beyond finding #2’s contract-schema deviation. Contrast direction, reference level, designs, shuffle/LODO construction, qvalue scope, post-fit baseMean filtering, CI, classification, Cook’s handling, and <code>lfcShrink(type="normal")</code> matched the approved decisions in the reviewed paths.</p>
+<p>Audit method followed: <a href="vscode://file/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad831d5818f7dad3c/audit/reviews/file:/Users/prakritipaul/.agents/skills/continuous-independent-audit/SKILL.md">continuous-independent-audit skill</a>.</p>
+<h2 id="re-check-after-fixes">Re-check after fixes</h2>
+<table>
+<thead>
+<tr>
+<th>Finding</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>#1 Gene identity validation</td>
+<td>FIXED</td>
+<td>Substituted-gene reproducer/T12 raises <code>ValueError</code>; all 8 real cell types exactly match the 15,701 input genes.</td>
+</tr>
+<tr>
+<td>#2 <code>run</code> column schema</td>
+<td>RESOLVED-BY-CONTRACT</td>
+<td>Contract now specifies constant <code>run="main"</code>; both output files have the matching 15-column schema.</td>
+</tr>
+<tr>
+<td>#3 Notebook memory pressure</td>
+<td>FIXED</td>
+<td>Instrumented execution passed; all <code>m1b_runs.csv</code> reads use <code>usecols</code>, <code>nrows</code>, or <code>skiprows</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>Pytest: <code>15 passed, 2 deselected in 138.00s (0:02:17)</code>.</p>
+<p>Diff reviewed at <code>9f06e21e</code>; R code unchanged, no new issue found.</p>
+<p><strong>Verdict: PASS</strong></p></body></html>

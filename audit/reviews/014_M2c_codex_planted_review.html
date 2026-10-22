@@ -1,0 +1,38 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>Codex review of the planted-bug snapshot: M2c (not told about the bug)</title><style>
+:root { --bg:#fcfcfb; --ink:#2b2b28; --muted:#5c5c57; --rule:#e6e6e3; --accent:#2a78d6; --code:#f3f3f1; }
+@media (prefers-color-scheme: dark) { :root { --bg:#1a1a19; --ink:#f2f2ef; --muted:#c3c2b7; --rule:#34342f; --accent:#6da7ec; --code:#262624; } }
+body { background:var(--bg); color:var(--ink); font:16px/1.6 -apple-system, "Segoe UI", sans-serif; max-width:52rem; margin:2rem auto; padding:0 16px; }
+h1 { font-size:1.6rem; border-bottom:1px solid var(--rule); padding-bottom:.4rem; }
+h2 { font-size:1.2rem; margin-top:2rem; color:var(--accent); }
+a { color:var(--accent); } li { margin:.35rem 0; }
+code { background:var(--code); padding:.1em .35em; border-radius:4px; font-size:.9em; }
+table { border-collapse:collapse; margin:1rem 0; } th, td { border:1px solid var(--rule); padding:.35rem .6rem; text-align:left; vertical-align:top; }
+nav { color:var(--muted); font-size:.9rem; border:1px solid var(--rule); border-radius:6px; padding:.5rem 1rem; }
+del { color:var(--muted); }
+</style></head><body><nav><strong>Contents</strong><div class="toc">
+<ul>
+<li><a href="#codex-review-of-the-planted-bug-snapshot-m2c-not-told-about-the-bug">Codex review of the planted-bug snapshot: M2c (not told about the bug)</a></li>
+</ul>
+</div>
+</nav><h1 id="codex-review-of-the-planted-bug-snapshot-m2c-not-told-about-the-bug">Codex review of the planted-bug snapshot: M2c (not told about the bug)</h1>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Severity</th>
+<th>file:line</th>
+<th>Finding</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>High</td>
+<td><code>R/m2c_fgsea.R:55</code></td>
+<td>BH correction is performed separately per collection, not across all Hallmark and KEGG sets within each cell type.</td>
+<td><code>ave(res$pval, collection_of[res$pathway], ...)</code> partitions p-values by collection. Decision D2 requires one BH adjustment over both collections per cell type. This can change <code>padj</code>, affected calls, and program labels.</td>
+</tr>
+</tbody>
+</table>
+<p>Verdict: M2c is not correct as written; all reviewed rules align except the multiple-testing scope.</p></body></html>

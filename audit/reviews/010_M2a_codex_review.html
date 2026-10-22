@@ -1,0 +1,99 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>Codex review 1 and re-checks: M2a (Wave 3)</title><style>
+:root { --bg:#fcfcfb; --ink:#2b2b28; --muted:#5c5c57; --rule:#e6e6e3; --accent:#2a78d6; --code:#f3f3f1; }
+@media (prefers-color-scheme: dark) { :root { --bg:#1a1a19; --ink:#f2f2ef; --muted:#c3c2b7; --rule:#34342f; --accent:#6da7ec; --code:#262624; } }
+body { background:var(--bg); color:var(--ink); font:16px/1.6 -apple-system, "Segoe UI", sans-serif; max-width:52rem; margin:2rem auto; padding:0 16px; }
+h1 { font-size:1.6rem; border-bottom:1px solid var(--rule); padding-bottom:.4rem; }
+h2 { font-size:1.2rem; margin-top:2rem; color:var(--accent); }
+a { color:var(--accent); } li { margin:.35rem 0; }
+code { background:var(--code); padding:.1em .35em; border-radius:4px; font-size:.9em; }
+table { border-collapse:collapse; margin:1rem 0; } th, td { border:1px solid var(--rule); padding:.35rem .6rem; text-align:left; vertical-align:top; }
+nav { color:var(--muted); font-size:.9rem; border:1px solid var(--rule); border-radius:6px; padding:.5rem 1rem; }
+del { color:var(--muted); }
+</style></head><body><nav><strong>Contents</strong><div class="toc">
+<ul>
+<li><a href="#codex-review-1-and-re-checks-m2a-wave-3">Codex review 1 and re-checks: M2a (Wave 3)</a><ul>
+<li><a href="#review-1">Review 1</a></li>
+<li><a href="#re-check">Re-check</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</nav><h1 id="codex-review-1-and-re-checks-m2a-wave-3">Codex review 1 and re-checks: M2a (Wave 3)</h1>
+<h2 id="review-1">Review 1</h2>
+<ol>
+<li>
+<p>pytest: <strong>10 passed in 9.96s</strong>. Command exited 0; only benign Arrow CPU-cache warnings.</p>
+</li>
+<li>
+<p>Findings</p>
+</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Severity</th>
+<th>file:line</th>
+<th>Finding</th>
+<th>Concrete failing scenario or reproducer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>medium</td>
+<td><a href="/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad1f077ceace0031e/src/m2a_calls.py:122">src/m2a_calls.py:122</a></td>
+<td>I2 traceability is not independent: it calls <code>label_genes</code>, the function it is supposed to check. A shared defect in label construction and validation passes unnoticed. T7 only tampers with the finished table, so it misses this weakness.</td>
+<td>Monkeypatching <code>label_genes</code> to return a table incorrectly labeling a one-cell-type gene as <code>shared</code> makes <code>check_traceability</code> return successfully.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>medium</td>
+<td><a href="/Users/prakritipaul/Git/IFNbeta-immune-celltype-txn-effects/.claude/worktrees/agent-ad1f077ceace0031e/src/m2a_calls.py:48">src/m2a_calls.py:48</a></td>
+<td>LODO validation checks only the number of distinct run names, not that the expected donor-specific refits exist. Thus a missing donor can be replaced by an arbitrary <code>lodo_*</code> run while satisfying the contract’s count check. T5 tests deletion and duplication, but not identity substitution.</td>
+<td>Replacing B-cell <code>lodo_d7</code> with <code>lodo_NOT_A_DONOR</code> preserves eight runs; <code>lodo_stability</code> accepts it and reports the call stable.</td>
+</tr>
+</tbody>
+</table>
+<ol>
+<li>
+<p>Proposed NEW tests</p>
+</li>
+<li>
+<p><strong>Independent traceability oracle:</strong> replace or monkeypatch <code>label_genes</code> with a consistently wrong implementation, then require <code>check_traceability</code> to reject its table by independently reconstructing arrows, counts, flags, and label precedence from primitive call fields. This fails currently.</p>
+</li>
+<li>
+<p><strong>Exact LODO identity:</strong> construct the expected donor-run set, replace one expected run with <code>lodo_NOT_A_DONOR</code> while preserving the required count, and require a <code>ValueError</code> naming the missing/unexpected run. This fails currently.</p>
+</li>
+<li>
+<p>Unapproved decisions</p>
+</li>
+</ol>
+<p>None found. The DE boundary, tested-only directional CI rules, label precedence, megakaryocyte flag, schemas, arrows, and validation-before-writing behavior otherwise match the approved contract and decisions.</p>
+<h2 id="re-check">Re-check</h2>
+<table>
+<thead>
+<tr>
+<th>Finding</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Independent traceability</td>
+<td>FIXED</td>
+<td>Wrong <code>label_genes</code> output was rejected. Independent logic correctly covers precedence, directional/tested-only CI rules, stars, arrows, counts, and megakaryocyte flag.</td>
+</tr>
+<tr>
+<td>Exact LODO identity</td>
+<td>PARTIAL</td>
+<td>Explicit <code>paired_donors</code> rejects missing/unexpected runs, and production passes it. But the optional fallback accepted a DC substitution <code>lodo_d0 → lodo_d6</code>; it infers expectations from the input being validated.</td>
+</tr>
+</tbody>
+</table>
+<p>Pytest: <strong>12 passed in 25.21s</strong>.</p>
+<p>New issue: <strong>medium</strong> — <code>lodo_stability(..., paired_donors=None)</code> remains a validation loophole for low-power cell types. Remove the fallback or require <code>paired_donors</code>.</p>
+<p>Verdict: <strong>PARTIAL</strong></p>
+<p>Audit followed the <a href="vscode://file/Users/prakritipaul/.agents/skills/continuous-independent-audit/SKILL.md">continuous-independent-audit skill</a>.
+Follow-up: the fallback was removed (paired_donors required) and Codex's DC substitution case added to T12; 12/12 pass.</p></body></html>

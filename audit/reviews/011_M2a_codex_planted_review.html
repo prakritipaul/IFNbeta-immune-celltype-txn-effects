@@ -1,0 +1,38 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>Codex review of the planted-bug snapshot: M2a (not told about the bug)</title><style>
+:root { --bg:#fcfcfb; --ink:#2b2b28; --muted:#5c5c57; --rule:#e6e6e3; --accent:#2a78d6; --code:#f3f3f1; }
+@media (prefers-color-scheme: dark) { :root { --bg:#1a1a19; --ink:#f2f2ef; --muted:#c3c2b7; --rule:#34342f; --accent:#6da7ec; --code:#262624; } }
+body { background:var(--bg); color:var(--ink); font:16px/1.6 -apple-system, "Segoe UI", sans-serif; max-width:52rem; margin:2rem auto; padding:0 16px; }
+h1 { font-size:1.6rem; border-bottom:1px solid var(--rule); padding-bottom:.4rem; }
+h2 { font-size:1.2rem; margin-top:2rem; color:var(--accent); }
+a { color:var(--accent); } li { margin:.35rem 0; }
+code { background:var(--code); padding:.1em .35em; border-radius:4px; font-size:.9em; }
+table { border-collapse:collapse; margin:1rem 0; } th, td { border:1px solid var(--rule); padding:.35rem .6rem; text-align:left; vertical-align:top; }
+nav { color:var(--muted); font-size:.9rem; border:1px solid var(--rule); border-radius:6px; padding:.5rem 1rem; }
+del { color:var(--muted); }
+</style></head><body><nav><strong>Contents</strong><div class="toc">
+<ul>
+<li><a href="#codex-review-of-the-planted-bug-snapshot-m2a-not-told-about-the-bug">Codex review of the planted-bug snapshot: M2a (not told about the bug)</a></li>
+</ul>
+</div>
+</nav><h1 id="codex-review-of-the-planted-bug-snapshot-m2a-not-told-about-the-bug">Codex review of the planted-bug snapshot: M2a (not told about the bug)</h1>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Severity</th>
+<th>file:line</th>
+<th>Finding</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Medium</td>
+<td><code>src/m2a_calls.py:105</code></td>
+<td>Upward <code>shared*</code> rescue uses strict <code>ci_high &gt; 1</code>; the approved rule is inclusive (<code>≥ 1</code>).</td>
+<td>The boundary reproducer expects <code>shared*</code> at <code>ci_high == 1.0</code> but receives <code>partial</code>; <code>test_T3_ci_rules_boundary_and_direction</code> fails. The independent traceability path correctly uses <code>&gt;= 1</code> at line 143, so such input would ultimately abort rather than write output. Downward and <code>specific*</code> boundaries are correctly inclusive.</td>
+</tr>
+</tbody>
+</table>
+<p>Verdict: M2a is not fully correct as written; all other requested rules checked conform, but the upward shared-rescue boundary must be inclusive.</p></body></html>

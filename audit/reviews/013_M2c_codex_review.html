@@ -1,0 +1,100 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>Codex review 1 and re-check: M2c (Wave 3)</title><style>
+:root { --bg:#fcfcfb; --ink:#2b2b28; --muted:#5c5c57; --rule:#e6e6e3; --accent:#2a78d6; --code:#f3f3f1; }
+@media (prefers-color-scheme: dark) { :root { --bg:#1a1a19; --ink:#f2f2ef; --muted:#c3c2b7; --rule:#34342f; --accent:#6da7ec; --code:#262624; } }
+body { background:var(--bg); color:var(--ink); font:16px/1.6 -apple-system, "Segoe UI", sans-serif; max-width:52rem; margin:2rem auto; padding:0 16px; }
+h1 { font-size:1.6rem; border-bottom:1px solid var(--rule); padding-bottom:.4rem; }
+h2 { font-size:1.2rem; margin-top:2rem; color:var(--accent); }
+a { color:var(--accent); } li { margin:.35rem 0; }
+code { background:var(--code); padding:.1em .35em; border-radius:4px; font-size:.9em; }
+table { border-collapse:collapse; margin:1rem 0; } th, td { border:1px solid var(--rule); padding:.35rem .6rem; text-align:left; vertical-align:top; }
+nav { color:var(--muted); font-size:.9rem; border:1px solid var(--rule); border-radius:6px; padding:.5rem 1rem; }
+del { color:var(--muted); }
+</style></head><body><nav><strong>Contents</strong><div class="toc">
+<ul>
+<li><a href="#codex-review-1-and-re-check-m2c-wave-3">Codex review 1 and re-check: M2c (Wave 3)</a><ul>
+<li><a href="#review-1">Review 1</a></li>
+<li><a href="#re-check">Re-check</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</nav><h1 id="codex-review-1-and-re-check-m2c-wave-3">Codex review 1 and re-check: M2c (Wave 3)</h1>
+<h2 id="review-1">Review 1</h2>
+<ol>
+<li>
+<p>pytest result: <strong>6 passed, 3 failed</strong> in 42.25s. T5, T6, and T9 failed because R could not open a port in the sandbox; this is not counted as a code failure.</p>
+</li>
+<li>
+<p>Findings</p>
+</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Severity</th>
+<th>file:line</th>
+<th>Finding</th>
+<th>Concrete failing scenario or reproducer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>medium</td>
+<td><code>src/m2c_programs.py:86-95</code></td>
+<td><code>label_programs</code> derives the cell-type universe only from returned GSEA rows. If one cell type has no testable sets, it disappears and a program affected in the remaining seven is incorrectly labeled <code>shared</code>, contrary to labeling across all 8.</td>
+<td>Seven significant rows for <code>cell_1</code>–<code>cell_7</code>, with <code>cell_8</code> absent, produce <code>n_up=7, label="shared"</code>.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>low</td>
+<td><code>notebooks/m2c_programs.py:206</code></td>
+<td>The notebook identifies a specific program’s cell type using <code>!= "–"</code>, so it mistakes <code>n/t</code> for an affected cell. This already misreports two real programs and risks incorrect FINDINGS text.</td>
+<td><code>HALLMARK_ANGIOGENESIS</code> is printed as B cells, but B cells are <code>n/t</code>; the affected cell is CD14+ Monocytes. <code>KEGG_ARRHYTHMOGENIC_RIGHT_VENTRICULAR_CARDIOMYOPATHY_ARVC</code> is similarly printed as B cells instead of CD4 T cells.</td>
+</tr>
+</tbody>
+</table>
+<ol>
+<li>
+<p>Proposed NEW tests</p>
+</li>
+<li>
+<p>Supply eight ranked cell types where one has no gene set passing the 15–500 matched-gene limit. Assert it remains represented as <code>n/t</code> and seven same-direction hits are <code>partial</code>, not <code>shared</code>. This fails currently.</p>
+</li>
+<li>Exercise the notebook’s specific-cell reporting with an earlier <code>n/t</code> cell and a later <code>↑</code>/<code>↓</code> cell. Assert the reported cell is the arrow-bearing cell. This fails currently.</li>
+</ol>
+<p>Test-suite weakness noted: T7 does not test BH calculation or scope—it supplies precomputed <code>padj</code> values directly. The current R implementation nevertheless correctly applies BH within each cell type across both collections.</p>
+<ol>
+<li>Unapproved decisions: <strong>none</strong>. The notebook’s “open question” comment at line 29 is stale; the implemented <code>average</code> linkage matches the approved decision.</li>
+</ol>
+<h2 id="re-check">Re-check</h2>
+<table>
+<thead>
+<tr>
+<th>Finding</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Missing cell type falsely yields <code>shared</code></td>
+<td>Fixed</td>
+<td>Reproducer returns <code>partial</code>, <code>n_up=7</code>, and <code>cell_8="n/t"</code>; unknown cell types raise <code>ValueError</code>.</td>
+</tr>
+<tr>
+<td>Notebook mistakes <code>n/t</code> for affected cell</td>
+<td>Fixed</td>
+<td>Arrow-only lookup confirmed. Real output reports <code>HALLMARK_ANGIOGENESIS → CD14+ Monocytes</code> and KEGG ARVC → <code>CD4 T cells</code>.</td>
+</tr>
+<tr>
+<td>Regression checks</td>
+<td>Pass</td>
+<td><code>n/t</code> marker retained; T6 uses its revised distributed 501-gene toy; R implementation unchanged.</td>
+</tr>
+</tbody>
+</table>
+<p>Pytest: <strong>7 passed, 3 sandbox-only failures</strong>. T5, T6, and T9 failed solely because R could not open a port; not counted as code failures.</p>
+<p>New issues: <strong>none</strong>.</p>
+<p><strong>Verdict: PASS</strong></p></body></html>
